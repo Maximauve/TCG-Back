@@ -1,20 +1,22 @@
-name: 'tcg-api'
+name: 'cenergia_intra'
 
 services:
   database:
     image: mysql:8.3
     env_file:
       - .env.local
+    ports:
+      - "3306:3306"
     volumes:
       - ./data:/var/lib/mysql
     networks:
-      - my_network
+      - cenergia_intra
   mailer:
     image: dockage/mailcatcher
     ports:
       - "1080:1080"
     networks:
-      - my_network
+      - cenergia_intra
   nginx:
     image: nginx:latest
     ports:
@@ -26,7 +28,7 @@ services:
     depends_on:
       - php
     networks:
-      - my_network
+      - cenergia_intra
 
   php:
     build:
@@ -36,31 +38,8 @@ services:
     depends_on:
       - database
     networks:
-      - my_network
-
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-    volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - cenergia_intra
 
 networks:
-  my_network:
+  cenergia_intra:
     driver: bridge
-volumes:
-###> doctrine/doctrine-bundle ###
-  database_data:
-###< doctrine/doctrine-bundle ###
