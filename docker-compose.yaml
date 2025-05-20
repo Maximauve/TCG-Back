@@ -1,4 +1,4 @@
-name: 'cenergia_intra'
+name: 'tcg-api'
 
 services:
   database:
