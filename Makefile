@@ -1,4 +1,6 @@
 .DEFAULT_GOAL := help
+USER_ID := $(shell id -u)
+GROUP_ID := $(shell id -g)
 
 .PHONY: help
 help:
@@ -18,24 +20,24 @@ down: ## Stop and remove containers
 
 .PHONY: app-install
 app-install: ## Install the app
-	docker compose exec --user www-data php /bin/bash -c "composer install"
+	docker compose exec --user $(USER_ID):$(GROUP_ID) php /bin/bash -c "composer install"
 
 .PHONY: app-cc
 app-cc: ## Clear the cache
-	docker compose exec --user www-data php /bin/bash -c "php bin/console cache:clear"
+	docker compose exec --user $(USER_ID):$(GROUP_ID) php /bin/bash -c "php bin/console cache:clear"
 
 .PHONY: app-ccc
 app-ccc: ## Clear the cache - all
-	docker compose exec --user www-data php /bin/bash -c "php bin/console cache:clear && php bin/console cache:pool:clear --all"
+	docker compose exec --user $(USER_ID):$(GROUP_ID) php /bin/bash -c "php bin/console cache:clear && php bin/console cache:pool:clear --all"
 
 .PHONY: app-migrate
 app-migrate: ## Migrate database with latest migrations files
-	docker compose exec --user www-data php /bin/bash -c "php bin/console doctrine:migration:migrate --allow-no-migration"
+	docker compose exec --user $(USER_ID):$(GROUP_ID) php /bin/bash -c "php bin/console doctrine:migration:migrate --allow-no-migration"
 
 .PHONY: app-migration-generate
 app-migration-generate: ## Generate a migration file
-	docker compose exec --user www-data php /bin/bash -c "php bin/console make:migration"
+	docker compose exec --user $(USER_ID):$(GROUP_ID) php /bin/bash -c "php bin/console make:migration"
 
 .PHONY: app-connect
 app-connect: ## Connect to the app container
-	@docker compose exec -it --user www-data php bash
+	@docker compose exec -it --user $(USER_ID):$(GROUP_ID) php bash
