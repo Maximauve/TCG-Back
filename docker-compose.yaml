@@ -10,13 +10,13 @@ services:
     volumes:
       - ./data:/var/lib/mysql
     networks:
-      - cenergia_intra
+      - my_network
   mailer:
     image: dockage/mailcatcher
     ports:
       - "1080:1080"
     networks:
-      - cenergia_intra
+      - my_network
   nginx:
     image: nginx:latest
     ports:
@@ -28,7 +28,7 @@ services:
     depends_on:
       - php
     networks:
-      - cenergia_intra
+      - my_network
 
   php:
     build:
@@ -38,8 +38,8 @@ services:
     depends_on:
       - database
     networks:
-      - cenergia_intra
+      - my_network
 
 networks:
-  cenergia_intra:
+  my_network:
     driver: bridge
