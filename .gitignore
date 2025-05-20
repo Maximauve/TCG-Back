@@ -8,3 +8,11 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+
+###> dev ###
+*.local.*
+/data/
+/.idea/
+/.vscode/
+###> symfony/monolog-bundle ###
