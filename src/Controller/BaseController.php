@@ -1,23 +1,17 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Controller;
 
+use App\Entity\User;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 
-class BaseController extends AbstractController
+abstract class BaseController extends AbstractController
 {
-
-    #[Route('/', name: 'app_base')]
-    public function index(): Response
+    public function getUser(): ?User
     {
-        return $this->json(
-            [
-                'message' => 'Welcome to the API',
-            ]
-        );
+        /** @var User|null $user */
+        $user = parent::getUser();
+
+        return $user;
     }
 }
