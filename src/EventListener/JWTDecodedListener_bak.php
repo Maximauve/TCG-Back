@@ -2,8 +2,9 @@
 
 namespace App\EventListener;
 
-use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTDecodedEvent;
 use App\Repository\UserRepository;
+use Lexik\Bundle\JWTAuthenticationBundle\Event\JWTDecodedEvent;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 class JWTDecodedListener
 {
@@ -27,6 +28,8 @@ class JWTDecodedListener
             'profilePicture' => $user->getProfilePicture(),
             'description' => $user->getDescription(),
         ];
+
+        dd($payload);
 
         $event->setPayload($payload); // Don't forget to regive the payload for next event / step
     }
