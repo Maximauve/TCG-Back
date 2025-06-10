@@ -68,14 +68,7 @@ final class RegisterController extends AbstractController
             $this->entityManager->flush();
 
             return $this->json([
-                'token' => $JWTManager->createFromPayload($user, [
-                    'firstName' => $user->getFirstName(),
-                    'lastName' => $user->getLastName(),
-                    'profilePicture' => $user->getProfilePicture(),
-                    'description' => $user->getDescription(),
-                    'email' => $user->getEmail(),
-                    'username' => $user->getUsername(),
-                ]),
+                'token' => $JWTManager->create($user),
                 'message' => $translator->trans('user.registered_successfully')
             ], Response::HTTP_CREATED);
 

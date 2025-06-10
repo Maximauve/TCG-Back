@@ -21,13 +21,18 @@ class JWTCreatedSubscriber implements EventSubscriberInterface
         $user = $event->getUser();
 
         $payload = $event->getData();
-
-        // Ajoute ici toutes les données que tu veux inclure dans le token
-        $payload['id'] = $user->getId();
-        $payload['email'] = $user->getEmail();
-        $payload['firstName'] = $user->getFirstName();
-        $payload['lastName'] = $user->getLastName();
-        // etc.
+        if (isset($payload['username'])) {
+            unset($payload['username']);
+        }
+        $payload['user'] = [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'username' => $user->getUsername(),
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+            'profilePicture' => $user->getProfilePicture(),
+            'description' => $user->getDescription(),
+        ];
 
         $event->setData($payload);
     }
