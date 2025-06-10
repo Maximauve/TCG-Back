@@ -24,7 +24,7 @@ final class RegisterController extends AbstractController
     ) {
     }
 
-    #[Route('/register', name: 'api_register', methods: ['POST'])]
+    #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function index(
         Request $request,
         JWTTokenManagerInterface $JWTManager,
