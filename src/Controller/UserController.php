@@ -45,20 +45,35 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/api/user', name: 'app_user_update', methods: ['PUT'])]
+    #[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
     public function update_user(
         Request $request,
-        JWTTokenManagerInterface $JWTManager,
         UserRepository $userRepository,
         TranslatorInterface $translator,
         SerializerInterface $serializer,
-        ValidatorInterface $validator
+        ValidatorInterface $validator,
+        ?string $id = null
     ): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-        if (!$user) {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
             return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // If no ID provided, use current user
+        if ($id === null) {
+            $user = $currentUser;
+        } else {
+            $user = $userRepository->find($id);
+            if (!$user) {
+                return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if current user is admin or the same user
+            if (!in_array('ROLE_ADMIN', $currentUser->getRoles()) && $currentUser->getId() !== $user->getId()) {
+                return $this->json(['error' => $translator->trans('user.unauthorized')], Response::HTTP_FORBIDDEN);
+            }
         }
 
         try {
@@ -122,14 +137,31 @@ final class UserController extends AbstractController
         ], Response::HTTP_OK);
     }
 
-    #[Route('/api/user', name: 'app_user_delete', methods: ['DELETE'])]
+    #[Route('/api/user/{id}', name: 'app_user_delete', methods: ['DELETE'])]
     public function delete_user(
-        TranslatorInterface $translator
+        TranslatorInterface $translator,
+        UserRepository $userRepository,
+        ?string $id = null
     ): Response {
-        /** @var User $user */
-        $user = $this->getUser();
-        if (!$user) {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
             return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // If no ID provided, use current user
+        if ($id === null) {
+            $user = $currentUser;
+        } else {
+            $user = $userRepository->find($id);
+            if (!$user) {
+                return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if current user is admin or the same user
+            if (!in_array('ROLE_ADMIN', $currentUser->getRoles()) && $currentUser->getId() !== $user->getId()) {
+                return $this->json(['error' => $translator->trans('user.unauthorized')], Response::HTTP_FORBIDDEN);
+            }
         }
 
         $this->entityManager->remove($user);
