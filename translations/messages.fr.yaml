@@ -1,0 +1,13 @@
+user:
+  already_exists: "L'utilisateur existe déjà."
+  username_taken: "Le nom d'utilisateur est déjà pris."
+  registered_successfully: "L'utilisateur a été enregistré avec succès."
+  registration_failed: "Échec de l'enregistrement de l'utilisateur."
+  not_found: "Utilisateur non trouvé."
+  updated_successfully: "Les informations de l'utilisateur ont été mises à jour avec succès."
+  deleted_successfully: "L'utilisateur a été supprimé avec succès."
+
+
+
+unexpected_error: "Une erreur inattendue s'est produite."
+invalid_json_format: "Le format du JSON n'est pas valide."
