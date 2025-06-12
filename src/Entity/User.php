@@ -54,6 +54,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $username = null;
 
     /**
+     * @var Collection<int, Card>
+     */
+    #[ORM\ManyToMany(targetEntity: Card::class, inversedBy: 'users')]
+    private Collection $Cards;
+
+    /**
+     * @var Collection<int, CardCollection>
+     */
+    #[ORM\OneToMany(targetEntity: CardCollection::class, mappedBy: 'owner')]
+    private Collection $cardCollections;
+
+    /**
      * @var Collection<int, OAuthAccount>
      */
     #[ORM\OneToMany(targetEntity: OAuthAccount::class, mappedBy: 'user', orphanRemoval: true)]
@@ -61,6 +73,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->Cards = new ArrayCollection();
+        $this->cardCollections = new ArrayCollection();
         $this->linkedAccounts = new ArrayCollection();
     }
 
@@ -193,6 +207,60 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUsername(string $username): static
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Card>
+     */
+    public function getCards(): Collection
+    {
+        return $this->Cards;
+    }
+
+    public function addCard(Card $card): static
+    {
+        if (!$this->Cards->contains($card)) {
+            $this->Cards->add($card);
+        }
+
+        return $this;
+    }
+
+    public function removeCard(Card $card): static
+    {
+        $this->Cards->removeElement($card);
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, CardCollection>
+     */
+    public function getCardCollections(): Collection
+    {
+        return $this->cardCollections;
+    }
+
+    public function addCardCollection(CardCollection $cardCollection): static
+    {
+        if (!$this->cardCollections->contains($cardCollection)) {
+            $this->cardCollections->add($cardCollection);
+            $cardCollection->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCardCollection(CardCollection $cardCollection): static
+    {
+        if ($this->cardCollections->removeElement($cardCollection)) {
+            // set the owning side to null (unless already changed)
+            if ($cardCollection->getOwner() === $this) {
+                $cardCollection->setOwner(null);
+            }
+        }
 
         return $this;
     }
