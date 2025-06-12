@@ -1,13 +1,20 @@
 <?php
 
-
 namespace App\Controller;
 
+use App\DTO\CreateCardCollectionDTO;
+use App\Entity\CardCollection;
+use App\Entity\User;
 use App\Repository\CardCollectionRepository;
 use App\Repository\UserRepository;
+use App\Service\ImageUploaderService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class CardCollectionController extends AbstractController
 {
@@ -72,5 +79,65 @@ final class CardCollectionController extends AbstractController
             'display_img' => $collection->getDisplayImage(),
             'cards' => $cards,
         ]);
+    }
+
+    #[Route('/api/card-collections', name: 'app_card_collection_create', methods: ['POST'])]
+    public function create(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ImageUploaderService $imageUploader
+    ): Response {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $name = $request->request->get('name');
+        $description = $request->request->get('description');
+        $releaseDate = $request->request->get('releaseDate');
+        $endDate = $request->request->get('endDate');
+        $isSpecial = filter_var($request->request->get('isSpecial'), FILTER_VALIDATE_BOOLEAN);
+
+        /** @var UploadedFile|null $displayImage */
+        $displayImage = $request->files->get('displayImage');
+        /** @var UploadedFile|null $boosterImage */
+        $boosterImage = $request->files->get('boosterImage');
+
+        if (!$name || !$description || !$releaseDate || !$endDate || !$displayImage || !$boosterImage) {
+            return $this->json(['error' => 'All fields and both images are required'], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            $releaseDateObj = new \DateTimeImmutable($releaseDate);
+            $endDateObj = new \DateTimeImmutable($endDate);
+        } catch (\Exception $e) {
+            return $this->json(['error' => 'Invalid date format'], Response::HTTP_BAD_REQUEST);
+        }
+
+        $collection = new CardCollection();
+        $collection->setName($name);
+        $collection->setDescription($description);
+        $collection->setDisplayImage($imageUploader->upload($displayImage));
+        $collection->setBoosterImage($imageUploader->upload($boosterImage));
+        $collection->setReleaseDate($releaseDateObj);
+        $collection->setEndDate($endDateObj);
+        $collection->setIsSpecial($isSpecial);
+        $collection->setOwner($user);
+
+        $entityManager->persist($collection);
+        $entityManager->flush();
+
+        return $this->json([
+            'id' => $collection->getId(),
+            'name' => $collection->getName(),
+            'description' => $collection->getDescription(),
+            'display_img' => $collection->getDisplayImage(),
+            'booster_img' => $collection->getBoosterImage(),
+            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
+            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
+            'is_special' => $collection->isSpecial(),
+        ], Response::HTTP_CREATED);
     }
 }
