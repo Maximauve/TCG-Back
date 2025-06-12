@@ -8,6 +8,9 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+###> uploads ###
+/public/uploads/*
+###< uploads ###
 
 ###> dev ###
 *.local.*

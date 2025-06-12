@@ -29,3 +29,8 @@ services:
     App\EventListener\JWTCreatedSubscriber:
         tags:
             - { name: 'kernel.event_subscriber' }
+
+    App\Service\ImageUploaderService:
+        arguments:
+            $uploadsDirectory: '%kernel.project_dir%/public/uploads'
+            $slugger: '@Symfony\Component\String\Slugger\SluggerInterface'
