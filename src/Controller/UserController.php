@@ -15,6 +15,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 
 final class UserController extends AbstractController
 {
@@ -47,38 +48,15 @@ final class UserController extends AbstractController
 
     #[Route('/api/user', name: 'app_user_update', methods: ['PUT'])]
     public function update_user(
-        Request $request,
-        JWTTokenManagerInterface $JWTManager,
+        #[MapRequestPayload] UserUpdateDTO $userDTO,
         UserRepository $userRepository,
         TranslatorInterface $translator,
-        SerializerInterface $serializer,
-        ValidatorInterface $validator
     ): Response
     {
         /** @var User $user */
         $user = $this->getUser();
         if (!$user) {
             return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_UNAUTHORIZED);
-        }
-
-        try {
-            /** @var UserUpdateDTO $userDTO */
-            $userDTO = $serializer->deserialize(
-                $request->getContent(),
-                UserUpdateDTO::class,
-                'json'
-            );
-        } catch (\Exception $e) {
-            return $this->json(['error' => $translator->trans('invalid_json_format')], Response::HTTP_BAD_REQUEST);
-        }
-
-        $errors = $validator->validate($userDTO);
-        if (count($errors) > 0) {
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
         if ($userDTO->getEmail() && $userDTO->getEmail() !== $user->getEmail()) {
