@@ -24,14 +24,29 @@ final class UserController extends AbstractController
     ) {
     }
 
-    #[Route('/api/user', name: 'app_user', methods: ['GET'])]
-    public function get_user(): Response
-    {
-        /** @var User $user */
-        $user = $this->getUser();
+    #[Route('/api/user/{id}', name: 'app_user', methods: ['GET'])]
+    public function get_user(
+        UserRepository $userRepository,
+        TranslatorInterface $translator,
+        ?string $id = null
+    ): Response {
+        /** @var User $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_UNAUTHORIZED);
+        }
 
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        if ($id === null) {
+            $user = $currentUser;
+        } else {
+            $user = $userRepository->find($id);
+            if (!$user) {
+                return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_NOT_FOUND);
+            }
+
+            if (!in_array('ROLE_ADMIN', $currentUser->getRoles()) && $currentUser->getId() !== $user->getId()) {
+                return $this->json(['error' => $translator->trans('user.unauthorized')], Response::HTTP_FORBIDDEN);
+            }
         }
 
         return $this->json([
