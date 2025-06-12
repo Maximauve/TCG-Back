@@ -9,3 +9,5 @@ user:
 
 unexpected_error: "Une erreur inattendue s'est produite."
 invalid_json_format: "Le format du JSON n'est pas valide."
+
+card:
