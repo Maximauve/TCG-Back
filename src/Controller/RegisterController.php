@@ -55,6 +55,10 @@ final class RegisterController extends AbstractController
                 return $this->json(['error' => $translator->trans('user.already_exists')], Response::HTTP_BAD_REQUEST);
             }
 
+            if ($userRepository->findOneBy(['username' => $userDTO->getUsername()])) {
+                return $this->json(['error' => $translator->trans('user.username_taken')], Response::HTTP_BAD_REQUEST);
+            }
+
             $user = new User();
             $user->setEmail($userDTO->getEmail());
             $user->setPassword($this->passwordHasher->hashPassword($user, $userDTO->getPassword()));
