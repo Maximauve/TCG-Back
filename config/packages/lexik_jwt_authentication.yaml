@@ -5,9 +5,7 @@ lexik_jwt_authentication:
     token_ttl: 3600
 
     token_extractors:
-        cookie:
+        authorization_header:
             enabled: true
-            name: token
-
-    set_cookies:
-        token: ~
+            prefix: Bearer
+            name: Authorization
