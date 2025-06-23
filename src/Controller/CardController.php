@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\DTO\CreateCardDTO;
+use App\DTO\UpdateCardDTO;
 use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,6 +14,7 @@ use App\Entity\CardRarity;
 use App\Entity\User;
 use App\Service\ImageUploaderService;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use OpenApi\Attributes as OA;
@@ -21,6 +24,17 @@ final class CardController extends AbstractController
     // show user cards
     #[Route('/api/cards', name: 'app_cards', methods: ['GET'])]
     #[OA\Tag(name: 'Cards')]
+    #[OA\Response(
+        response: 200,
+        description: 'Get user cards',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Card::class))
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
     public function showCards(): Response
     {
         $user = $this->getAuthenticatedUser();
@@ -35,6 +49,16 @@ final class CardController extends AbstractController
 
     #[Route('/api/cards', name: 'app_card_create', methods: ['POST'])]
     #[OA\Tag(name: 'Cards')]
+    #[OA\Response(response: 201, description: 'Card created successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(ref: new Model(type: CreateCardDTO::class))
+        )
+    )]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
@@ -62,6 +86,22 @@ final class CardController extends AbstractController
 
     #[Route('/api/cards/update/{id}', name: 'app_card_update', methods: ['POST'])]
     #[OA\Tag(name: 'Cards')]
+    #[OA\Response(response: 200, description: 'Card updated successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\RequestBody(
+        required: false,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(ref: new Model(type: UpdateCardDTO::class))
+        )
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: 'The ID of the card',
+    )]
     public function update(
         int $id,
         Request $request,
@@ -90,6 +130,15 @@ final class CardController extends AbstractController
 
     #[Route('/api/cards/{id}', name: 'app_card_delete', methods: ['DELETE'])]
     #[OA\Tag(name: 'Cards')]
+    #[OA\Response(response: 200, description: 'Card deleted successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: 'The ID of the card',
+    )]
     public function delete(
         int $id,
         EntityManagerInterface $entityManager

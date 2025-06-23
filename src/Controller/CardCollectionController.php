@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\DTO\CreateCardCollectionDTO;
+use App\DTO\UpdateCardCollectionDTO;
 use App\Entity\CardCollection;
 use App\Entity\User;
 use App\Repository\CardCollectionRepository;
@@ -60,6 +61,21 @@ final class CardCollectionController extends AbstractController
     
     #[Route('/api/card-collections/{id}', name: 'app_card_collection', methods: ['GET'])]
     #[OA\Tag(name: 'Card Collection')]
+    #[OA\Response(
+        response: 200,
+        description: 'Get card collection',
+        content: new OA\JsonContent(ref: new Model(type: CardCollection::class))
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: 'The ID of the card collection',
+    )]
+
     public function showCardCollection(int $id, CardCollectionRepository $cardCollectionRepository): Response
     {
         /** @var User $user */
@@ -97,6 +113,16 @@ final class CardCollectionController extends AbstractController
 
     #[Route('/api/card-collections', name: 'app_card_collection_create', methods: ['POST'])]
     #[OA\Tag(name: 'Card Collection')]
+    #[OA\Response(response: 201, description: 'Card collection created successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(ref: new Model(type: CreateCardCollectionDTO::class))
+        )
+    )]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
@@ -158,6 +184,24 @@ final class CardCollectionController extends AbstractController
 
     #[Route('/api/card-collections/update/{id}', name: 'app_card_collection_update', methods: ['POST'])]
     #[OA\Tag(name: 'Card Collection')]
+    #[OA\Response(response: 200, description: 'Card collection updated successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'Collection not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\RequestBody(
+        required: false,
+        content: new OA\MediaType(
+            mediaType: 'multipart/form-data',
+            schema: new OA\Schema(ref: new Model(type: UpdateCardCollectionDTO::class))
+        )
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: 'The ID of the card collection',
+    )]
     public function update(
         int $id,
         Request $request,
@@ -239,6 +283,16 @@ final class CardCollectionController extends AbstractController
 
     #[Route('/api/card-collections/{id}', name: 'app_card_collection_delete', methods: ['DELETE'])]
     #[OA\Tag(name: 'Card Collection')]
+    #[OA\Response(response: 200, description: 'Card collection deleted successfully')]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'Collection not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        required: true,
+        description: 'The ID of the card collection',
+    )]
     public function delete(
         int $id,
         EntityManagerInterface $entityManager,

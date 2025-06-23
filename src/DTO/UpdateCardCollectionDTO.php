@@ -6,17 +6,14 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraints as Assert;
 
-class CreateCardCollectionDTO
+class UpdateCardCollectionDTO
 {
-    #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 255)]
-    public string $name;
+    public ?string $name = null;
 
-    #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 255)]
-    public string $description;
+    public ?string $description = null;
 
-    #[Assert\NotNull]
     #[Assert\Image(
         maxSize: '5M',
         mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
@@ -25,7 +22,6 @@ class CreateCardCollectionDTO
     #[OA\Property(type: 'string', format: 'binary', description: 'Display image file')]
     public ?UploadedFile $displayImage = null;
 
-    #[Assert\NotNull]
     #[Assert\Image(
         maxSize: '5M',
         mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
@@ -34,13 +30,10 @@ class CreateCardCollectionDTO
     #[OA\Property(type: 'string', format: 'binary', description: 'Booster image file')]
     public ?UploadedFile $boosterImage = null;
 
-    #[Assert\NotNull]
-    public \DateTimeImmutable $releaseDate;
+    public ?\DateTimeImmutable $releaseDate = null;
 
-    #[Assert\NotNull]
-    #[Assert\GreaterThan(propertyPath: 'releaseDate')]
-    public \DateTimeImmutable $endDate;
+    #[Assert\GreaterThan(propertyPath: 'releaseDate', message: 'End date must be after release date')]
+    public ?\DateTimeImmutable $endDate = null;
 
-    #[Assert\NotNull]
-    public bool $isSpecial = false;
+    public ?bool $isSpecial = null;
 } 
