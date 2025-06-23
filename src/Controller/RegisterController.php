@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +27,13 @@ final class RegisterController extends AbstractController
 
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     #[OA\Tag(name: 'Authentication')]
+    #[OA\Response(response: 201, description: 'User registered successfully')]
+    #[OA\Response(response: 400, description: 'Bad request')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\RequestBody(
+        required: true,
+        content: new OA\JsonContent(ref: new Model(type: UserRegisterDTO::class))
+    )]
     public function index(
         Request $request,
         JWTTokenManagerInterface $JWTManager,
