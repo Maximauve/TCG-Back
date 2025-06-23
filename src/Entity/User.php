@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -33,13 +35,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var string The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $firstName = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $lastName = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -50,6 +52,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 120)]
     private ?string $username = null;
+
+    /**
+     * @var Collection<int, OAuthAccount>
+     */
+    #[ORM\OneToMany(targetEntity: OAuthAccount::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $linkedAccounts;
+
+    public function __construct()
+    {
+        $this->linkedAccounts = new ArrayCollection();
+    }
 
     public function getId(): ?Uuid
     {
@@ -129,7 +142,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->firstName;
     }
 
-    public function setFirstName(string $firstName): static
+    public function setFirstName(?string $firstName): static
     {
         $this->firstName = $firstName;
 
@@ -141,7 +154,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->lastName;
     }
 
-    public function setLastName(string $lastName): static
+    public function setLastName(?string $lastName): static
     {
         $this->lastName = $lastName;
 
@@ -180,6 +193,36 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUsername(string $username): static
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OAuthAccount>
+     */
+    public function getLinkedAccounts(): Collection
+    {
+        return $this->linkedAccounts;
+    }
+
+    public function addLinkedAccount(OAuthAccount $linkedAccount): static
+    {
+        if (!$this->linkedAccounts->contains($linkedAccount)) {
+            $this->linkedAccounts->add($linkedAccount);
+            $linkedAccount->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLinkedAccount(OAuthAccount $linkedAccount): static
+    {
+        if ($this->linkedAccounts->removeElement($linkedAccount)) {
+            // set the owning side to null (unless already changed)
+            if ($linkedAccount->getUser() === $this) {
+                $linkedAccount->setUser(null);
+            }
+        }
 
         return $this;
     }

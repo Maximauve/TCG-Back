@@ -16,10 +16,10 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final class UserController extends AbstractController
+final class UserController extends BaseController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
+        private readonly EntityManagerInterface      $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
     }

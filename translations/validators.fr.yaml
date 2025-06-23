@@ -1,0 +1,13 @@
+oauth:
+   provider:
+      not_blank: "Le fournisseur d'authentification ne peut pas être vide."
+   providerId:
+      not_blank: "Le fournisseur d'authentification doit avoir un ID."
+   email:
+      not_blank: "L'email ne peut pas être vide."
+   name:
+      not_blank: "Le nom ne peut pas être vide."
+   accessToken:
+      not_blank: "Le jeton d'accès ne peut pas être vide."
+   refreshToken:
+      not_blank: "Le jeton de rafraîchissement ne peut pas être vide."
