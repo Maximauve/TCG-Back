@@ -59,18 +59,12 @@ final class UserController extends BaseController
 
     #[Route('/api/user/{id}', name: 'app_user_update', methods: ['PUT'])]
     public function update_user(
-<<<<<<< HEAD
         Request $request,
         UserRepository $userRepository,
         TranslatorInterface $translator,
         SerializerInterface $serializer,
         ValidatorInterface $validator,
         ?string $id = null
-=======
-        #[MapRequestPayload] UserUpdateDTO $userDTO,
-        UserRepository $userRepository,
-        TranslatorInterface $translator,
->>>>>>> f332816 (refactor(user_edit): use mapRequestPayload attribute for code quality)
     ): Response
     {
         /** @var User $currentUser */
@@ -94,7 +88,6 @@ final class UserController extends BaseController
             }
         }
 
-<<<<<<< HEAD
         // If no ID provided, use current user
         if ($id === null) {
             $user = $currentUser;
@@ -130,8 +123,6 @@ final class UserController extends BaseController
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
-=======
->>>>>>> f332816 (refactor(user_edit): use mapRequestPayload attribute for code quality)
         if ($userDTO->getEmail() && $userDTO->getEmail() !== $user->getEmail()) {
             if ($userRepository->findOneBy(['email' => $userDTO->getEmail()])) {
                 return $this->json(['error' => $translator->trans('user.already_exists')], Response::HTTP_BAD_REQUEST);
