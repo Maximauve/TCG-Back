@@ -41,11 +41,8 @@ security:
     access_control:
         - { path: ^/api/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/register, roles: PUBLIC_ACCESS }
-<<<<<<< HEAD
-        - { path: ^/api/auth/oauth, roles: PUBLIC_ACCESS }
-=======
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
->>>>>>> 9141cfe (docs(swagger) swagger init in backend)
+        - { path: ^/api/auth/oauth, roles: PUBLIC_ACCESS }
         - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
