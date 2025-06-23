@@ -9,3 +9,6 @@ user:
 
 unexpected_error: "Une erreur inattendue s'est produite."
 invalid_json_format: "Le format du JSON n'est pas valide."
+
+oauth:
+  account_already_exists: "Un compte avec le mail %email% existe déjà. Veuillez vous connecter avec ce compte et associez votre compte depuis la page de profil."
