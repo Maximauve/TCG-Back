@@ -9,6 +9,8 @@ use App\Repository\CardCollectionRepository;
 use App\Repository\UserRepository;
 use App\Service\ImageUploaderService;
 use Doctrine\ORM\EntityManagerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,8 +20,19 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class CardCollectionController extends AbstractController
 {
-    // get user card collections
     #[Route('/api/card-collections', name: 'app_card_collections', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Get user card collections',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: CardCollection::class))
+        ),
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    #[OA\Tag(name: 'Card Collection')]
     public  function index(CardCollectionRepository $cardCollectionRepository): Response
     {
         /** @var User $user */
@@ -44,8 +57,9 @@ final class CardCollectionController extends AbstractController
         return $this->json($data);
     }
 
-    // get user card collection by id
+    
     #[Route('/api/card-collections/{id}', name: 'app_card_collection', methods: ['GET'])]
+    #[OA\Tag(name: 'Card Collection')]
     public function showCardCollection(int $id, CardCollectionRepository $cardCollectionRepository): Response
     {
         /** @var User $user */
@@ -82,6 +96,7 @@ final class CardCollectionController extends AbstractController
     }
 
     #[Route('/api/card-collections', name: 'app_card_collection_create', methods: ['POST'])]
+    #[OA\Tag(name: 'Card Collection')]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
@@ -142,6 +157,7 @@ final class CardCollectionController extends AbstractController
     }
 
     #[Route('/api/card-collections/update/{id}', name: 'app_card_collection_update', methods: ['POST'])]
+    #[OA\Tag(name: 'Card Collection')]
     public function update(
         int $id,
         Request $request,
@@ -222,6 +238,7 @@ final class CardCollectionController extends AbstractController
     }
 
     #[Route('/api/card-collections/{id}', name: 'app_card_collection_delete', methods: ['DELETE'])]
+    #[OA\Tag(name: 'Card Collection')]
     public function delete(
         int $id,
         EntityManagerInterface $entityManager,

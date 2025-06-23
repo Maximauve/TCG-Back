@@ -79,6 +79,21 @@ final class UserController extends BaseController
             return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_UNAUTHORIZED);
         }
 
+        // If no ID provided, use current user
+        if ($id === null) {
+            $user = $currentUser;
+        } else {
+            $user = $userRepository->find($id);
+            if (!$user) {
+                return $this->json(['error' => $translator->trans('user.not_found')], Response::HTTP_NOT_FOUND);
+            }
+
+            // Check if current user is admin or the same user
+            if (!in_array('ROLE_ADMIN', $currentUser->getRoles()) && $currentUser->getId() !== $user->getId()) {
+                return $this->json(['error' => $translator->trans('user.unauthorized')], Response::HTTP_FORBIDDEN);
+            }
+        }
+
 <<<<<<< HEAD
         // If no ID provided, use current user
         if ($id === null) {

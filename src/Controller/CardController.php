@@ -14,11 +14,13 @@ use App\Service\ImageUploaderService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use OpenApi\Attributes as OA;
 
 final class CardController extends AbstractController
 {
     // show user cards
     #[Route('/api/cards', name: 'app_cards', methods: ['GET'])]
+    #[OA\Tag(name: 'Cards')]
     public function showCards(): Response
     {
         $user = $this->getAuthenticatedUser();
@@ -32,6 +34,7 @@ final class CardController extends AbstractController
     }
 
     #[Route('/api/cards', name: 'app_card_create', methods: ['POST'])]
+    #[OA\Tag(name: 'Cards')]
     public function create(
         Request $request,
         EntityManagerInterface $entityManager,
@@ -58,6 +61,7 @@ final class CardController extends AbstractController
     }
 
     #[Route('/api/cards/update/{id}', name: 'app_card_update', methods: ['POST'])]
+    #[OA\Tag(name: 'Cards')]
     public function update(
         int $id,
         Request $request,
@@ -85,6 +89,7 @@ final class CardController extends AbstractController
     }
 
     #[Route('/api/cards/{id}', name: 'app_card_delete', methods: ['DELETE'])]
+    #[OA\Tag(name: 'Cards')]
     public function delete(
         int $id,
         EntityManagerInterface $entityManager
