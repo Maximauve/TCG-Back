@@ -6,10 +6,12 @@ use App\DTO\OAuthDTO;
 use App\DTO\UserRegisterDTO;
 use App\Entity\OAuthAccount;
 use App\Entity\User;
+use App\Repository\OAuthAccountRepository;
 use App\Repository\UserRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -24,6 +26,7 @@ final class AuthController extends BaseController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly JWTTokenManagerInterface    $JWTManager,
         private readonly UserRepository              $userRepository,
+        private readonly OAuthAccountRepository      $oAuthAccountRepository,
         private readonly TranslatorInterface         $translator,
     ) {
     }
@@ -61,6 +64,38 @@ final class AuthController extends BaseController
     {
         $provider = $authDTO->provider;
         $accountId = $authDTO->providerId;
+
+        $user = $this->getUser();
+        if ($user !== null) {
+            $oAuth = $this->oAuthAccountRepository->findOneBy([
+                'provider' => $provider,
+                'accountId' => $accountId,
+                'user' => $user
+            ]);
+            if ($oAuth !== null) {
+                return $this->json([
+                    'token' => $this->JWTManager->create($user)
+                ]);
+            }
+            $oAuth = new OAuthAccount();
+            $oAuth->setProvider($provider);
+            $oAuth->setAccountId($accountId);
+            $user->addLinkedAccount($oAuth);
+
+            try {
+                $this->entityManager->persist($oAuth);
+                $this->entityManager->persist($user);
+                $this->entityManager->flush();
+            } catch (\Throwable $e) {
+                return $this->json([
+                    'error' => $e->getMessage()
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+            return $this->json([
+                'token' => $this->JWTManager->create($user),
+            ]);
+        }
+
         $user = $this->userRepository->findByLinkedAccount($provider, $accountId);
         if (!empty($user)) {
             $user = $user[0];
