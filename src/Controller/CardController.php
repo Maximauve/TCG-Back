@@ -59,8 +59,13 @@ final class CardController extends AbstractController
         $dropRate = $request->request->get('dropRate');
         $collectionId = $request->request->get('collectionId');
 
-        /** @var UploadedFile|null $image */
+        /*
+        /** @var UploadedFile|null $image 
         $image = $request->files->get('image');
+        */
+
+        //by default image is card_placeholder.png
+        $image = 'CARD_PLACEHOLDER.png';
 
         if (!$name || !$description || !$artistTag || !$rarity || !$releaseDate || !$dropRate || !$collectionId || !$image) {
             return $this->json(['error' => 'All fields and image are required'], Response::HTTP_BAD_REQUEST);
@@ -84,7 +89,7 @@ final class CardController extends AbstractController
         $card->setRarity(CardRarity::from($rarity));
         $card->setReleaseDate($releaseDateObj);
         $card->setDropRate((float)$dropRate);
-        $card->setImage($imageUploader->upload($image));
+        $card->setImage($image); // Don't upload string path, just set directly
         $card->setCollection($collection);
 
         $entityManager->persist($card);
