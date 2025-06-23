@@ -14,6 +14,5 @@ card:
   not_found: "Carte non trouvée."
   not_found_in_collection: "Carte non trouvée dans la collection."
   not_found_in_user: "Carte non trouvée dans le profil de l'utilisateur."
-  not_found_in_collection: "Carte non trouvée dans la collection."
 oauth:
   account_already_exists: "Un compte avec le mail %email% existe déjà. Veuillez vous connecter avec ce compte et associez votre compte depuis la page de profil."
