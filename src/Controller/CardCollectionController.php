@@ -140,4 +140,112 @@ final class CardCollectionController extends AbstractController
             'is_special' => $collection->isSpecial(),
         ], Response::HTTP_CREATED);
     }
+
+    #[Route('/api/card-collections/update/{id}', name: 'app_card_collection_update', methods: ['POST'])]
+    public function update(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ImageUploaderService $imageUploader
+    ): Response {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $collection = $entityManager->getRepository(CardCollection::class)->find($id);
+        if (!$collection) {
+            return $this->json(['error' => 'Collection not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($collection->getOwner() !== $user) {
+            return $this->json(['error' => 'You are not the owner of this collection'], Response::HTTP_FORBIDDEN);
+        }
+
+        $name = $request->request->get('name');
+        $description = $request->request->get('description');
+        $releaseDate = $request->request->get('releaseDate');
+        $endDate = $request->request->get('endDate');
+        $isSpecial = $request->request->has('isSpecial') ? filter_var($request->request->get('isSpecial'), FILTER_VALIDATE_BOOLEAN) : $collection->isSpecial();
+
+        /** @var UploadedFile|null $displayImage */
+        $displayImage = $request->files->get('displayImage');
+        /** @var UploadedFile|null $boosterImage */
+        $boosterImage = $request->files->get('boosterImage');
+
+        if ($name) {
+            $collection->setName($name);
+        }
+        if ($description) {
+            $collection->setDescription($description);
+        }
+        if ($releaseDate) {
+            try {
+                $releaseDateObj = new \DateTimeImmutable($releaseDate);
+                $collection->setReleaseDate($releaseDateObj);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Invalid release date format'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+        if ($endDate) {
+            try {
+                $endDateObj = new \DateTimeImmutable($endDate);
+                $collection->setEndDate($endDateObj);
+            } catch (\Exception $e) {
+                return $this->json(['error' => 'Invalid end date format'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+        if ($request->request->has('isSpecial')) {
+            $collection->setIsSpecial($isSpecial);
+        }
+        if ($displayImage) {
+            $collection->setDisplayImage($imageUploader->upload($displayImage));
+        }
+        if ($boosterImage) {
+            $collection->setBoosterImage($imageUploader->upload($boosterImage));
+        }
+
+        $entityManager->flush();
+
+        return $this->json([
+            'id' => $collection->getId(),
+            'name' => $collection->getName(),
+            'description' => $collection->getDescription(),
+            'display_img' => $collection->getDisplayImage(),
+            'booster_img' => $collection->getBoosterImage(),
+            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
+            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
+            'is_special' => $collection->isSpecial(),
+        ], Response::HTTP_OK);
+    }
+
+    #[Route('/api/card-collections/{id}', name: 'app_card_collection_delete', methods: ['DELETE'])]
+    public function delete(
+        int $id,
+        EntityManagerInterface $entityManager,
+        ImageUploaderService $imageUploader,
+    ): Response {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $collection = $entityManager->getRepository(CardCollection::class)->find($id);
+        if (!$collection) {
+            return $this->json(['error' => 'Collection not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($collection->getOwner() !== $user) {
+            return $this->json(['error' => 'You are not the owner of this collection'], Response::HTTP_FORBIDDEN);
+        }
+
+        $entityManager->remove($collection);
+        $entityManager->flush();
+
+        return $this->json(['message' => 'Collection deleted'], Response::HTTP_OK);
+    }
 }

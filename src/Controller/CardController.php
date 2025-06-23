@@ -9,6 +9,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use App\Entity\Card;
 use App\Entity\CardCollection;
 use App\Entity\CardRarity;
+use App\Entity\User;
 use App\Service\ImageUploaderService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,24 +19,14 @@ final class CardController extends AbstractController
 {
     // show user cards
     #[Route('/api/cards', name: 'app_cards', methods: ['GET'])]
-    public  function showCards(UserRepository $userRepository): Response
+    public function showCards(): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof Response) {
+            return $user;
         }
 
-        $cards = $user->getCards()->map(function ($card) {
-            return [
-                'id' => $card->getId(),
-                'name' => $card->getName(),
-                'description' => $card->getDescription(),
-                'image' => $card->getImage(),
-                'artist' => $card->getArtistTag(),
-            ];
-        })->toArray();
+        $cards = $user->getCards()->map(fn($card) => $this->formatCardData($card))->toArray();
 
         return $this->json($cards);
     }
@@ -46,56 +37,226 @@ final class CardController extends AbstractController
         EntityManagerInterface $entityManager,
         ImageUploaderService $imageUploader
     ): Response {
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof Response) {
+            return $user;
+        }
+
+        $validationResult = $this->validateCreateRequest($request, $entityManager);
+        if ($validationResult instanceof Response) {
+            return $validationResult;
+        }
+
+        ['collection' => $collection, 'releaseDate' => $releaseDate] = $validationResult;
+
+        $card = $this->createCardFromRequest($request, $collection, $releaseDate);
+
+        $entityManager->persist($card);
+        $entityManager->flush();
+
+        return $this->json($this->formatCardDataWithDetails($card), Response::HTTP_CREATED);
+    }
+
+    #[Route('/api/cards/update/{id}', name: 'app_card_update', methods: ['POST'])]
+    public function update(
+        int $id,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        ImageUploaderService $imageUploader
+    ): Response {
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof Response) {
+            return $user;
+        }
+
+        $card = $this->findCardWithOwnershipCheck($id, $user, $entityManager);
+        if ($card instanceof Response) {
+            return $card;
+        }
+
+        $updateResult = $this->updateCardFromRequest($card, $request, $imageUploader);
+        if ($updateResult instanceof Response) {
+            return $updateResult;
+        }
+
+        $entityManager->flush();
+
+        return $this->json($this->formatCardDataWithDetails($card), Response::HTTP_OK);
+    }
+
+    #[Route('/api/cards/{id}', name: 'app_card_delete', methods: ['DELETE'])]
+    public function delete(
+        int $id,
+        EntityManagerInterface $entityManager
+    ): Response {
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof Response) {
+            return $user;
+        }
+
+        $card = $this->findCardWithOwnershipCheck($id, $user, $entityManager);
+        if ($card instanceof Response) {
+            return $card;
+        }
+
+        $entityManager->remove($card);
+        $entityManager->flush();
+
+        return $this->json(['message' => 'Card deleted'], Response::HTTP_OK);
+    }
+
+    /**
+     * Get authenticated user or return error response
+     */
+    private function getAuthenticatedUser(): User|Response
+    {
         $user = $this->getUser();
         if (!$user) {
             return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
+        return $user;
+    }
 
+    /**
+     * Find card and check ownership
+     */
+    private function findCardWithOwnershipCheck(int $id, User $user, EntityManagerInterface $entityManager): Card|Response
+    {
+        $card = $entityManager->getRepository(Card::class)->find($id);
+        if (!$card) {
+            return $this->json(['error' => 'Card not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        if ($card->getCollection()->getOwner() !== $user) {
+            return $this->json(['error' => 'You are not the owner of the collection containing this card'], Response::HTTP_FORBIDDEN);
+        }
+
+        return $card;
+    }
+
+    /**
+     * Validate create request and return collection and release date
+     */
+    private function validateCreateRequest(Request $request, EntityManagerInterface $entityManager): array|Response
+    {
+        $requiredFields = ['name', 'description', 'artistTag', 'rarity', 'releaseDate', 'dropRate', 'collectionId'];
+        $data = [];
+        
+        foreach ($requiredFields as $field) {
+            $value = $request->request->get($field);
+            if (!$value) {
+                return $this->json(['error' => "Field '{$field}' is required"], Response::HTTP_BAD_REQUEST);
+            }
+            $data[$field] = $value;
+        }
+
+        $collection = $entityManager->getRepository(CardCollection::class)->find($data['collectionId']);
+        if (!$collection) {
+            return $this->json(['error' => 'Collection not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $releaseDate = $this->parseDate($data['releaseDate']);
+        if ($releaseDate instanceof Response) {
+            return $releaseDate;
+        }
+
+        return ['collection' => $collection, 'releaseDate' => $releaseDate];
+    }
+
+    /**
+     * Create card entity from request data
+     */
+    private function createCardFromRequest(Request $request, CardCollection $collection, \DateTimeImmutable $releaseDate): Card
+    {
+        $card = new Card();
+        $card->setName($request->request->get('name'));
+        $card->setDescription($request->request->get('description'));
+        $card->setArtistTag($request->request->get('artistTag'));
+        $card->setRarity(CardRarity::from($request->request->get('rarity')));
+        $card->setReleaseDate($releaseDate);
+        $card->setDropRate((float)$request->request->get('dropRate'));
+        $card->setImage('CARD_PLACEHOLDER.png'); // Default image
+        $card->setCollection($collection);
+
+        return $card;
+    }
+
+    /**
+     * Update card from request data
+     */
+    private function updateCardFromRequest(Card $card, Request $request, ImageUploaderService $imageUploader): ?Response
+    {
         $name = $request->request->get('name');
         $description = $request->request->get('description');
         $artistTag = $request->request->get('artistTag');
         $rarity = $request->request->get('rarity');
         $releaseDate = $request->request->get('releaseDate');
         $dropRate = $request->request->get('dropRate');
-        $collectionId = $request->request->get('collectionId');
-
-        /*
-        /** @var UploadedFile|null $image 
         $image = $request->files->get('image');
-        */
 
-        //by default image is card_placeholder.png
-        $image = 'CARD_PLACEHOLDER.png';
-
-        if (!$name || !$description || !$artistTag || !$rarity || !$releaseDate || !$dropRate || !$collectionId || !$image) {
-            return $this->json(['error' => 'All fields and image are required'], Response::HTTP_BAD_REQUEST);
+        if ($name) $card->setName($name);
+        if ($description) $card->setDescription($description);
+        if ($artistTag) $card->setArtistTag($artistTag);
+        
+        if ($rarity) {
+            try {
+                $card->setRarity(CardRarity::from($rarity));
+            } catch (\ValueError $e) {
+                return $this->json(['error' => 'Invalid rarity value'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+        
+        if ($releaseDate) {
+            $releaseDateObj = $this->parseDate($releaseDate);
+            if ($releaseDateObj instanceof Response) {
+                return $releaseDateObj;
+            }
+            $card->setReleaseDate($releaseDateObj);
+        }
+        
+        if ($dropRate !== null && $dropRate !== '') {
+            $card->setDropRate((float)$dropRate);
+        }
+        
+        if ($image instanceof UploadedFile) {
+            $card->setImage($imageUploader->upload($image));
         }
 
-        $collection = $entityManager->getRepository(CardCollection::class)->find($collectionId);
-        if (!$collection) {
-            return $this->json(['error' => 'Collection not found'], Response::HTTP_NOT_FOUND);
-        }
+        return null;
+    }
 
+    /**
+     * Parse date string to DateTimeImmutable
+     */
+    private function parseDate(string $dateString): \DateTimeImmutable|Response
+    {
         try {
-            $releaseDateObj = new \DateTimeImmutable($releaseDate);
+            return new \DateTimeImmutable($dateString);
         } catch (\Exception $e) {
             return $this->json(['error' => 'Invalid date format'], Response::HTTP_BAD_REQUEST);
         }
+    }
 
-        $card = new Card();
-        $card->setName($name);
-        $card->setDescription($description);
-        $card->setArtistTag($artistTag);
-        $card->setRarity(CardRarity::from($rarity));
-        $card->setReleaseDate($releaseDateObj);
-        $card->setDropRate((float)$dropRate);
-        $card->setImage($image); // Don't upload string path, just set directly
-        $card->setCollection($collection);
+    /**
+     * Format basic card data
+     */
+    private function formatCardData(Card $card): array
+    {
+        return [
+            'id' => $card->getId(),
+            'name' => $card->getName(),
+            'description' => $card->getDescription(),
+            'image' => $card->getImage(),
+            'artist' => $card->getArtistTag(),
+        ];
+    }
 
-        $entityManager->persist($card);
-        $entityManager->flush();
-
-        return $this->json([
+    /**
+     * Format card data with detailed information
+     */
+    private function formatCardDataWithDetails(Card $card): array
+    {
+        return [
             'id' => $card->getId(),
             'name' => $card->getName(),
             'description' => $card->getDescription(),
@@ -104,7 +265,7 @@ final class CardController extends AbstractController
             'rarity' => $card->getRarity()->value,
             'release_date' => $card->getReleaseDate()->format('Y-m-d H:i:s'),
             'drop_rate' => $card->getDropRate(),
-            'collection_id' => $collection->getId(),
-        ], Response::HTTP_CREATED);
+            'collection_id' => $card->getCollection()->getId(),
+        ];
     }
 }
