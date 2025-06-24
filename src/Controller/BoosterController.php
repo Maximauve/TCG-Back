@@ -103,8 +103,11 @@ final class BoosterController extends AbstractController
     {
         $drawnCards = [];
         
+        // Precompute total weight of drop rates
+        $totalWeight = array_sum(array_map(fn($card) => $card->getDropRate(), $availableCards));
+        
         for ($i = 0; $i < $count; $i++) {
-            $selectedCard = $this->selectRandomCardByDropRate($availableCards);
+            $selectedCard = $this->selectRandomCardByDropRate($availableCards, $totalWeight);
             $drawnCards[] = $selectedCard;
         }
         
