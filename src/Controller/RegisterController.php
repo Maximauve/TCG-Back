@@ -75,7 +75,7 @@ final class RegisterController extends AbstractController
             $user->setLastName($userDTO->getLastName());
             $user->setDescription("");
             $user->setUsername($userDTO->getUsername());
-            $user->setProfilePicture("https://api.dicebear.com/7.x/avataaars/svg?seed=JohnD");
+            $user->setProfilePicture("https://api.dicebear.com/7.x/avataaars/svg?seed=" . $userDTO->getUsername());
 
             $this->entityManager->persist($user);
             $this->entityManager->flush();

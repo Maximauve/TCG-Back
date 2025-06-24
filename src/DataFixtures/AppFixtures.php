@@ -28,7 +28,7 @@ class AppFixtures extends Fixture
         $user->setUsername('testuser');
         $user->setFirstName('Test');
         $user->setLastName('User');
-        $user->setProfilePicture('default.png');
+        $user->setProfilePicture('https://api.dicebear.com/7.x/avataaars/svg?seed=testusername');
         $user->setPassword($this->passwordHasher->hashPassword(
             $user,
             'password'
