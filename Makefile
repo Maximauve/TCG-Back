@@ -1,6 +1,8 @@
 .DEFAULT_GOAL := help
 USER_ID := $(shell id -u)
 GROUP_ID := $(shell id -g)
+CURRENT_USER := $(shell whoami)
+CURRENT_PATH := $(shell pwd)
 
 .PHONY: help
 help:
@@ -41,3 +43,7 @@ app-migration-generate: ## Generate a migration file
 .PHONY: app-connect
 app-connect: ## Connect to the app container
 	@docker compose exec -it --user $(USER_ID):$(GROUP_ID) php bash
+
+.PHONY: app-right
+app-right: ## add right to the user 
+	sudo chown -R $(CURRENT_USER) $(CURRENT_PATH)
