@@ -72,6 +72,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: OAuthAccount::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $linkedAccounts;
 
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $boosterCreditUpdatedAt = null;
+
+    #[ORM\Column(type: Types::INTEGER, nullable: false, options: ['default' => 1])]
+    private int $boosterStack = 1;
+
     public function __construct()
     {
         $this->userCards = new ArrayCollection();
@@ -307,6 +313,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $linkedAccount->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getBoosterCreditUpdatedAt(): ?\DateTimeInterface
+    {
+        return $this->boosterCreditUpdatedAt;
+    }
+
+    public function setBoosterCreditUpdatedAt(?\DateTimeInterface $boosterCreditUpdatedAt): static
+    {
+        $this->boosterCreditUpdatedAt = $boosterCreditUpdatedAt;
+
+        return $this;
+    }
+
+    public function getBoosterStack(): int
+    {
+        return $this->boosterStack;
+    }
+
+    public function setBoosterStack(int $boosterStack): static
+    {
+        $this->boosterStack = $boosterStack;
 
         return $this;
     }
