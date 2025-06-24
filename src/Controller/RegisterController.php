@@ -7,7 +7,9 @@ use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use Monolog\Attribute\WithMonologChannel;
 use Nelmio\ApiDocBundle\Attribute\Model;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,11 +19,14 @@ use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use OpenApi\Attributes as OA;
+
+#[WithMonologChannel('exception')]
 final class RegisterController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private UserPasswordHasherInterface $passwordHasher
+        private EntityManagerInterface      $entityManager,
+        private UserPasswordHasherInterface $passwordHasher,
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -86,6 +91,10 @@ final class RegisterController extends AbstractController
             ], Response::HTTP_CREATED);
 
         } catch (\Exception $e) {
+            $this->logger->critical($e->getMessage(), [
+                'at' => $e->getFile() . ':' . $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return $this->json([
                 'error' => $translator->trans('unexpected_error'),
                 'message' => $e->getMessage()

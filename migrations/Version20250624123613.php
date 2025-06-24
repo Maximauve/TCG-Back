@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20250624120046 extends AbstractMigration
+final class Version20250624123613 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -63,18 +63,6 @@ final class Version20250624120046 extends AbstractMigration
             COMMENT ON COLUMN oauth_account.user_id IS '(DC2Type:uuid)'
         SQL);
         $this->addSql(<<<'SQL'
-            CREATE TABLE "user" (id UUID NOT NULL, email VARCHAR(180) NOT NULL, roles JSON NOT NULL, password VARCHAR(255) DEFAULT NULL, first_name VARCHAR(255) DEFAULT NULL, last_name VARCHAR(255) DEFAULT NULL, description TEXT DEFAULT NULL, profile_picture VARCHAR(100) NOT NULL, username VARCHAR(120) NOT NULL, PRIMARY KEY(id))
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE UNIQUE INDEX UNIQ_IDENTIFIER_EMAIL ON "user" (email)
-        SQL);
-        $this->addSql(<<<'SQL'
-            CREATE UNIQUE INDEX UNIQ_IDENTIFIER_USERNAME ON "user" (username)
-        SQL);
-        $this->addSql(<<<'SQL'
-            COMMENT ON COLUMN "user".id IS '(DC2Type:uuid)'
-        SQL);
-        $this->addSql(<<<'SQL'
             CREATE TABLE user_card (id UUID NOT NULL, owner_id UUID NOT NULL, card_template_id UUID NOT NULL, obtained_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, obtained_from VARCHAR(50) NOT NULL, PRIMARY KEY(id))
         SQL);
         $this->addSql(<<<'SQL'
@@ -96,16 +84,28 @@ final class Version20250624120046 extends AbstractMigration
             COMMENT ON COLUMN user_card.obtained_at IS '(DC2Type:datetime_immutable)'
         SQL);
         $this->addSql(<<<'SQL'
+            CREATE TABLE users (id UUID NOT NULL, email VARCHAR(180) NOT NULL, roles JSON NOT NULL, password VARCHAR(255) DEFAULT NULL, first_name VARCHAR(255) DEFAULT NULL, last_name VARCHAR(255) DEFAULT NULL, description TEXT DEFAULT NULL, profile_picture VARCHAR(100) NOT NULL, username VARCHAR(120) NOT NULL, PRIMARY KEY(id))
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE UNIQUE INDEX UNIQ_IDENTIFIER_EMAIL ON users (email)
+        SQL);
+        $this->addSql(<<<'SQL'
+            CREATE UNIQUE INDEX UNIQ_IDENTIFIER_USERNAME ON users (username)
+        SQL);
+        $this->addSql(<<<'SQL'
+            COMMENT ON COLUMN users.id IS '(DC2Type:uuid)'
+        SQL);
+        $this->addSql(<<<'SQL'
             ALTER TABLE card ADD CONSTRAINT FK_161498D3514956FD FOREIGN KEY (collection_id) REFERENCES card_collection (id) NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE card_collection ADD CONSTRAINT FK_903FF83C7E3C61F9 FOREIGN KEY (owner_id) REFERENCES "user" (id) NOT DEFERRABLE INITIALLY IMMEDIATE
+            ALTER TABLE card_collection ADD CONSTRAINT FK_903FF83C7E3C61F9 FOREIGN KEY (owner_id) REFERENCES users (id) NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE oauth_account ADD CONSTRAINT FK_6E30F9D1A76ED395 FOREIGN KEY (user_id) REFERENCES "user" (id) NOT DEFERRABLE INITIALLY IMMEDIATE
+            ALTER TABLE oauth_account ADD CONSTRAINT FK_6E30F9D1A76ED395 FOREIGN KEY (user_id) REFERENCES users (id) NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
-            ALTER TABLE user_card ADD CONSTRAINT FK_6C95D41A7E3C61F9 FOREIGN KEY (owner_id) REFERENCES "user" (id) NOT DEFERRABLE INITIALLY IMMEDIATE
+            ALTER TABLE user_card ADD CONSTRAINT FK_6C95D41A7E3C61F9 FOREIGN KEY (owner_id) REFERENCES users (id) NOT DEFERRABLE INITIALLY IMMEDIATE
         SQL);
         $this->addSql(<<<'SQL'
             ALTER TABLE user_card ADD CONSTRAINT FK_6C95D41AE20E5022 FOREIGN KEY (card_template_id) REFERENCES card (id) NOT DEFERRABLE INITIALLY IMMEDIATE
@@ -143,10 +143,10 @@ final class Version20250624120046 extends AbstractMigration
             DROP TABLE oauth_account
         SQL);
         $this->addSql(<<<'SQL'
-            DROP TABLE "user"
+            DROP TABLE user_card
         SQL);
         $this->addSql(<<<'SQL'
-            DROP TABLE user_card
+            DROP TABLE users
         SQL);
     }
 }

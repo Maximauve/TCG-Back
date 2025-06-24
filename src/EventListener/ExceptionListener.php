@@ -1,6 +1,7 @@
 <?php
 namespace App\EventListener;
 
+use Monolog\Attribute\WithMonologChannel;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -8,6 +9,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
+#[WithMonologChannel('exception')]
 #[AsEventListener(event: 'kernel.exception')]
 readonly class ExceptionListener
 {
@@ -20,7 +22,8 @@ readonly class ExceptionListener
     {
         $exception = $event->getThrowable();
         $this->logger->error($exception->getMessage(), [
-            'exception' => $exception
+            'at' => $exception->getFile() . ':' . $exception->getLine(),
+            'trace' => $exception->getTraceAsString(),
         ]);
 
         $message = $this->translator->trans('unexpected_error');
