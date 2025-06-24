@@ -24,7 +24,7 @@ final class CardCollectionController extends AbstractController
     #[Route('/api/card-collections', name: 'app_card_collections', methods: ['GET'])]
     #[OA\Response(
         response: 200,
-        description: 'Get user card collections',
+        description: 'Get all card collections',
         content: new OA\JsonContent(
             type: 'array',
             items: new OA\Items(ref: new Model(type: CardCollection::class))
@@ -36,14 +36,7 @@ final class CardCollectionController extends AbstractController
     #[OA\Tag(name: 'Card Collection')]
     public  function index(CardCollectionRepository $cardCollectionRepository): Response
     {
-        /** @var User $user */
-        $user = $this->getUser();
-
-        if (!$user) {
-            return $this->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        $collections = $cardCollectionRepository->findBy(['owner' => $user]);
+        $collections = $cardCollectionRepository->findAll();
 
         $data = [];
         foreach ($collections as $collection) {
