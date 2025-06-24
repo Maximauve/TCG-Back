@@ -102,7 +102,7 @@ final class CardController extends AbstractController
             'rarity' => $userCard->getRarity()?->value,
             'image' => $userCard->getImage(),
             'artist' => $userCard->getArtistTag(),
-            'obtained_at' => $userCard->getObtainedAt()?->format('Y-m-d H:i:s'),
+            'obtained_at' => $userCard->getObtainedAt()?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'obtained_from' => $userCard->getObtainedFrom(),
         ];
     }
