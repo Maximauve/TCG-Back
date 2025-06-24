@@ -54,10 +54,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $username = null;
 
     /**
-     * @var Collection<int, Card>
+     * @var Collection<int, UserCard>
      */
-    #[ORM\ManyToMany(targetEntity: Card::class, inversedBy: 'users')]
-    private Collection $Cards;
+    #[ORM\OneToMany(targetEntity: UserCard::class, mappedBy: 'owner')]
+    private Collection $userCards;
 
     /**
      * @var Collection<int, CardCollection>
@@ -73,7 +73,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
-        $this->Cards = new ArrayCollection();
+        $this->userCards = new ArrayCollection();
         $this->cardCollections = new ArrayCollection();
         $this->linkedAccounts = new ArrayCollection();
     }
@@ -212,27 +212,42 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * @return Collection<int, Card>
+     * @return Collection<int, UserCard>
      */
-    public function getCards(): Collection
+    public function getUserCards(): Collection
     {
-        return $this->Cards;
+        return $this->userCards;
     }
 
-    public function addCard(Card $card): static
+    public function addUserCard(UserCard $userCard): static
     {
-        if (!$this->Cards->contains($card)) {
-            $this->Cards->add($card);
+        if (!$this->userCards->contains($userCard)) {
+            $this->userCards->add($userCard);
+            $userCard->setOwner($this);
         }
 
         return $this;
     }
 
-    public function removeCard(Card $card): static
+    public function removeUserCard(UserCard $userCard): static
     {
-        $this->Cards->removeElement($card);
+        if ($this->userCards->removeElement($userCard)) {
+            // set the owning side to null (unless already changed)
+            if ($userCard->getOwner() === $this) {
+                $userCard->setOwner(null);
+            }
+        }
 
         return $this;
+    }
+
+    /**
+     * @return Collection<int, Card>
+     */
+    public function getCards(): Collection
+    {
+        // Return card templates for backward compatibility
+        return $this->userCards->map(fn($userCard) => $userCard->getCardTemplate());
     }
 
     /**
