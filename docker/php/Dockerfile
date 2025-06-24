@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libmagickwand-dev \
     libicu-dev \
+    libpq-dev \
     zlib1g-dev
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
@@ -24,12 +25,14 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
 # Configurer et installer les extensions PHP
 RUN docker-php-ext-configure zip && \
     docker-php-ext-configure intl && \
-    docker-php-ext-configure gd
+    docker-php-ext-configure gd && \
+    docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql
 
 # Installer les extensions PHP
 RUN docker-php-ext-install \
     pdo \
-    pdo_mysql \
+    pdo_pgsql \
+    pgsql \
     zip \
     intl \
     mbstring \

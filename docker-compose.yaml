@@ -2,13 +2,13 @@ name: 'tcg-api'
 
 services:
   database:
-    image: mysql:8.3
+    image: postgres:12.3
     ports:
-      - "3306:3306"
+      - "5432:5432"
     env_file:
       - .env.local
     volumes:
-      - db_volume:/var/lib/mysql
+      - db_volume:/var/lib/postgresql/data
     networks:
       - my_network
   mailer:
