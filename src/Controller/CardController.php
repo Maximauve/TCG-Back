@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 
+use App\Repository\CardRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -76,6 +77,35 @@ final class CardController extends AbstractController
         $formattedCards = array_map(fn($userCard) => $this->formatUserCardData($userCard), $rareUserCards);
 
         return $this->json($formattedCards);
+    }
+
+    #[Route('/api/cards/list', name: 'app_cards_list', methods: ['GET'])]
+    #[OA\Tag(name: 'Cards')]
+    #[OA\Response(
+        response: 200,
+        description: 'Get all cards',
+        content: new OA\JsonContent(
+            type: 'array',
+            items: new OA\Items(ref: new Model(type: Card::class))
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    public function showCardsList(CardRepository $cardRepository): Response
+    {
+        $cards = $cardRepository->findAll();
+        
+        $cards = array_map(function(Card $card) {
+            return [
+                'id' => $card->getId(),
+                'name' => $card->getName(),
+                'rarity' => $card->getRarity()?->value,
+                'image' => $card->getImage(),
+            ];
+        }, $cards);
+
+        return $this->json($cards);
     }
 
     /**
