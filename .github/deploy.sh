@@ -10,10 +10,5 @@ if [ $? -ne 0 ]; then
     echo "Migration failed"
     exit 1
 fi
-php bin/console importmap:install
-if [ $? -ne 0 ]; then
-    echo "Import map install failed"
-    exit 1
-fi
 php bin/console cache:clear
 php bin/console cache:pool:clear --all
