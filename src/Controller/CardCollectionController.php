@@ -169,8 +169,8 @@ final class CardCollectionController extends AbstractController
             'description' => $collection->getDescription(),
             'display_img' => $collection->getDisplayImage(),
             'booster_img' => $collection->getBoosterImage(),
-            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
-            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
+            'release_date' => $collection->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'end_date' => $collection->getEndDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'is_special' => $collection->isSpecial(),
         ], Response::HTTP_CREATED);
     }
@@ -268,8 +268,8 @@ final class CardCollectionController extends AbstractController
             'description' => $collection->getDescription(),
             'display_img' => $collection->getDisplayImage(),
             'booster_img' => $collection->getBoosterImage(),
-            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
-            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
+            'release_date' => $collection->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'end_date' => $collection->getEndDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'is_special' => $collection->isSpecial(),
         ], Response::HTTP_OK);
     }

@@ -4,6 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    booster_open_cooldown_hours: 1
+    max_booster_stack: 4
 
 services:
 
@@ -21,6 +23,19 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
+
+    App\Controller\BoosterController:
+        # No additional arguments needed since it uses BoosterStackService
+
+    App\MessageHandler\UpdateBoosterStackHandler:
+        arguments:
+            $boosterOpenCooldownHours: '%booster_open_cooldown_hours%'
+            $maxBoosterStack: '%max_booster_stack%'
+
+    App\Service\BoosterStackService:
+        arguments:
+            $boosterOpenCooldownHours: '%booster_open_cooldown_hours%'
+            $maxBoosterStack: '%max_booster_stack%'
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

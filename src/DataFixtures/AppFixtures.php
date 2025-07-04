@@ -33,6 +33,8 @@ class AppFixtures extends Fixture
             $user,
             'password'
         ));
+        $user->setBoosterStack(1);
+        $user->setBoosterCreditUpdatedAt(new \DateTime());
         $manager->persist($user);
 
         // Create Card Collection

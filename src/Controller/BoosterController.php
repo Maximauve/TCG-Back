@@ -6,6 +6,7 @@ use App\Entity\Card;
 use App\Entity\CardCollection;
 use App\Entity\User;
 use App\Entity\UserCard;
+use App\Service\BoosterStackService;
 use Doctrine\ORM\EntityManagerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
@@ -16,6 +17,11 @@ use Symfony\Component\Routing\Attribute\Route;
 final class BoosterController extends AbstractController
 {
     private const CARDS_PER_BOOSTER = 5;
+
+    public function __construct(
+        private readonly BoosterStackService $boosterStackService,
+    ) {
+    }
 
     #[Route('/api/boosters/open/{collectionId}', name: 'app_booster_open', methods: ['POST'])]
     #[OA\Tag(name: 'Boosters')]
@@ -30,13 +36,15 @@ final class BoosterController extends AbstractController
                     property: 'cards',
                     type: 'array',
                     items: new OA\Items(ref: new Model(type: UserCard::class))
-                )
+                ),
+                'remaining_boosters' => new OA\Property(property: 'remaining_boosters', type: 'integer')
             ]
         )
     )]
     #[OA\Response(response: 401, description: 'Unauthorized')]
     #[OA\Response(response: 404, description: 'Collection not found')]
     #[OA\Response(response: 400, description: 'No cards available in collection')]
+    #[OA\Response(response: 429, description: 'Too many requests (cooldown)')]
     #[OA\Response(response: 500, description: 'Internal server error')]
     #[OA\Parameter(
         name: 'collectionId',
@@ -53,23 +61,82 @@ final class BoosterController extends AbstractController
             return $user;
         }
 
-        $collection = $this->findCollection($collectionId, $entityManager);
-        if ($collection instanceof Response) {
-            return $collection;
+        // Update user's booster stack
+        $this->boosterStackService->updateBoosterStack($user);
+
+        if ($user->getBoosterStack() > 0) {
+            $collection = $this->findCollection($collectionId, $entityManager);
+            if ($collection instanceof Response) {
+                return $collection;
+            }
+
+            $availableCards = $collection->getCards()->toArray();
+            if (empty($availableCards)) {
+                return $this->json(['error' => 'No cards available in this collection'], Response::HTTP_BAD_REQUEST);
+            }
+
+            $drawnCards = $this->drawCards($availableCards, self::CARDS_PER_BOOSTER);
+
+            // Decrement stack *before* creating cards and flushing
+            $user->setBoosterStack($user->getBoosterStack() - 1);
+            
+
+            if ($user->getBoosterStack() === 0 || 
+                ($user->getBoosterCreditUpdatedAt() === null && $user->getBoosterStack() < $this->boosterStackService->getMaxBoosterStack())) {
+                $user->setBoosterCreditUpdatedAt(new \DateTime());
+            }
+
+            $userCards = $this->createUserCards($drawnCards, $user, $entityManager);
+
+            return $this->json([
+                'message' => 'Booster opened successfully!',
+                'cards' => array_map(fn($userCard) => $this->formatUserCardData($userCard), $userCards),
+                'remaining_boosters' => $user->getBoosterStack()
+            ], Response::HTTP_OK);
+        } else {
+            // No boosters available
+            $nextBoosterAt = $this->boosterStackService->getTimeUntilNextBooster($user);
+
+            return $this->json([
+                'error' => 'You have no booster packs. Check back later!',
+                'next_booster_at' => $nextBoosterAt?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+                'current_stack' => $user->getBoosterStack()
+            ], Response::HTTP_TOO_MANY_REQUESTS);
+        }
+    }
+
+    #[Route('/api/boosters/status', name: 'app_booster_status', methods: ['GET'])]
+    #[OA\Tag(name: 'Boosters')]
+    #[OA\Response(
+        response: 200,
+        description: 'Get booster status',
+        content: new OA\JsonContent(
+            type: 'object',
+            properties: [
+                'current_stack' => new OA\Property(property: 'current_stack', type: 'integer'),
+                'next_booster_at' => new OA\Property(property: 'next_booster_at', type: 'string', nullable: true),
+                'can_open_booster' => new OA\Property(property: 'can_open_booster', type: 'boolean')
+            ]
+        )
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    public function getBoosterStatus(): Response
+    {
+        $user = $this->getAuthenticatedUser();
+        if ($user instanceof Response) {
+            return $user;
         }
 
-        $availableCards = $collection->getCards()->toArray();
-        if (empty($availableCards)) {
-            return $this->json(['error' => 'No cards available in this collection'], Response::HTTP_BAD_REQUEST);
-        }
+        // Update user's booster stack
+        $this->boosterStackService->updateBoosterStack($user);
 
-        $drawnCards = $this->drawCards($availableCards, self::CARDS_PER_BOOSTER);
-        $userCards = $this->createUserCards($drawnCards, $user, $entityManager);
+        $nextBoosterAt = $this->boosterStackService->getTimeUntilNextBooster($user);
 
         return $this->json([
-            'message' => 'Booster opened successfully!',
-            'cards' => array_map(fn($userCard) => $this->formatUserCardData($userCard), $userCards)
-        ], Response::HTTP_OK);
+            'current_stack' => $user->getBoosterStack(),
+            'next_booster_at' => $nextBoosterAt?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'can_open_booster' => $user->getBoosterStack() > 0
+        ]);
     }
 
     /**
@@ -174,10 +241,10 @@ final class BoosterController extends AbstractController
             'image' => $userCard->getImage(),
             'artist' => $userCard->getArtistTag(),
             'rarity' => $userCard->getRarity()?->value,
-            'release_date' => $userCard->getReleaseDate()?->format('Y-m-d H:i:s'),
+            'release_date' => $userCard->getReleaseDate()?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'drop_rate' => $userCard->getDropRate(),
             'collection_id' => $userCard->getCollection()?->getId(),
-            'obtained_at' => $userCard->getObtainedAt()?->format('Y-m-d H:i:s'),
+            'obtained_at' => $userCard->getObtainedAt()?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'obtained_from' => $userCard->getObtainedFrom(),
         ];
     }

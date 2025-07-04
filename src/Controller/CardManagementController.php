@@ -307,7 +307,7 @@ final class CardManagementController extends AbstractController
             'image' => $card->getImage(),
             'artist' => $card->getArtistTag(),
             'rarity' => $card->getRarity()->value,
-            'release_date' => $card->getReleaseDate()->format('Y-m-d H:i:s'),
+            'release_date' => $card->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
             'drop_rate' => $card->getDropRate(),
             'collection_id' => $card->getCollection()->getId(),
         ];
