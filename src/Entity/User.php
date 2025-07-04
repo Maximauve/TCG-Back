@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -10,6 +12,7 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
 
+#[ORM\Table(name: 'users')]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_EMAIL', fields: ['email'])]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
@@ -33,13 +36,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var string The hashed password
      */
-    #[ORM\Column]
+    #[ORM\Column(nullable: true)]
     private ?string $password = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $firstName = null;
 
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $lastName = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
@@ -50,6 +53,31 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Column(length: 120)]
     private ?string $username = null;
+
+    /**
+     * @var Collection<int, UserCard>
+     */
+    #[ORM\OneToMany(targetEntity: UserCard::class, mappedBy: 'owner')]
+    private Collection $userCards;
+
+    /**
+     * @var Collection<int, CardCollection>
+     */
+    #[ORM\OneToMany(targetEntity: CardCollection::class, mappedBy: 'owner')]
+    private Collection $cardCollections;
+
+    /**
+     * @var Collection<int, OAuthAccount>
+     */
+    #[ORM\OneToMany(targetEntity: OAuthAccount::class, mappedBy: 'user', orphanRemoval: true)]
+    private Collection $linkedAccounts;
+
+    public function __construct()
+    {
+        $this->userCards = new ArrayCollection();
+        $this->cardCollections = new ArrayCollection();
+        $this->linkedAccounts = new ArrayCollection();
+    }
 
     public function getId(): ?Uuid
     {
@@ -129,7 +157,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->firstName;
     }
 
-    public function setFirstName(string $firstName): static
+    public function setFirstName(?string $firstName): static
     {
         $this->firstName = $firstName;
 
@@ -141,7 +169,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->lastName;
     }
 
-    public function setLastName(string $lastName): static
+    public function setLastName(?string $lastName): static
     {
         $this->lastName = $lastName;
 
@@ -180,6 +208,105 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setUsername(string $username): static
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, UserCard>
+     */
+    public function getUserCards(): Collection
+    {
+        return $this->userCards;
+    }
+
+    public function addUserCard(UserCard $userCard): static
+    {
+        if (!$this->userCards->contains($userCard)) {
+            $this->userCards->add($userCard);
+            $userCard->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUserCard(UserCard $userCard): static
+    {
+        if ($this->userCards->removeElement($userCard)) {
+            // set the owning side to null (unless already changed)
+            if ($userCard->getOwner() === $this) {
+                $userCard->setOwner(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Card>
+     */
+    public function getCards(): Collection
+    {
+        // Return card templates for backward compatibility
+        return $this->userCards->map(fn($userCard) => $userCard->getCardTemplate());
+    }
+
+    /**
+     * @return Collection<int, CardCollection>
+     */
+    public function getCardCollections(): Collection
+    {
+        return $this->cardCollections;
+    }
+
+    public function addCardCollection(CardCollection $cardCollection): static
+    {
+        if (!$this->cardCollections->contains($cardCollection)) {
+            $this->cardCollections->add($cardCollection);
+            $cardCollection->setOwner($this);
+        }
+
+        return $this;
+    }
+
+    public function removeCardCollection(CardCollection $cardCollection): static
+    {
+        if ($this->cardCollections->removeElement($cardCollection)) {
+            // set the owning side to null (unless already changed)
+            if ($cardCollection->getOwner() === $this) {
+                $cardCollection->setOwner(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OAuthAccount>
+     */
+    public function getLinkedAccounts(): Collection
+    {
+        return $this->linkedAccounts;
+    }
+
+    public function addLinkedAccount(OAuthAccount $linkedAccount): static
+    {
+        if (!$this->linkedAccounts->contains($linkedAccount)) {
+            $this->linkedAccounts->add($linkedAccount);
+            $linkedAccount->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeLinkedAccount(OAuthAccount $linkedAccount): static
+    {
+        if ($this->linkedAccounts->removeElement($linkedAccount)) {
+            // set the owning side to null (unless already changed)
+            if ($linkedAccount->getUser() === $this) {
+                $linkedAccount->setUser(null);
+            }
+        }
 
         return $this;
     }

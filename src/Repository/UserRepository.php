@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Enum\ProviderEnum;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -43,6 +44,18 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('username', $username)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function findByLinkedAccount(ProviderEnum $provider, string $accountId): array
+    {
+        return $this->createQueryBuilder('u')
+            ->innerJoin('u.linkedAccounts', 'o')
+            ->andWhere('o.provider = :provider')
+            ->andWhere('o.accountId = :accountId')
+            ->setParameter('provider', $provider)
+            ->setParameter('accountId', $accountId)
+            ->getQuery()
+            ->getResult();
     }
 
     //    /**
