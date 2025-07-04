@@ -2,6 +2,12 @@ name: "Déploiement de l'application"
 
 on: workflow_dispatch
 
+env:
+   SSH_HOST: ${{ secrets.SSH_HOST }}
+   SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+   SSH_KEY: ${{ secrets.SSH_KEY }}
+   REMOTE_DIR: ${{ github.ref_name == 'main' && secrets.REMOTE_DIR_PROD || secrets.REMOTE_DIR_PREPROD }}
+
 jobs:
    check-requirements:
       runs-on: ubuntu-latest
