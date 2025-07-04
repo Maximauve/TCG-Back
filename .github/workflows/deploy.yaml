@@ -1,0 +1,63 @@
+name: "Déploiement de l'application"
+
+on: workflow_dispatch
+
+jobs:
+   check-requirements:
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Checkout repository
+           uses: actions/checkout@v2
+
+         - name: Setup PHP
+           uses: shivammathur/setup-php@v2
+           with:
+              php-version: '8.4.8'
+              extensions: intl, pdo_mysql, apcu, opcache, gd, curl, openssl, mbstring, soap, xml, iconv, dom, filter
+              coverage: pcov
+              tools: composer:v2
+              ini-values: zend.assertions=1 memory_limit=256M
+           env:
+              update: true
+         - name: Validate repository
+           run: composer validate
+
+   build:
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Checkout repository
+           uses: actions/checkout@v2
+
+         - name: Setup PHP
+           uses: shivammathur/setup-php@v2
+           with:
+              php-version: '8.4.8'
+              extensions: intl, pdo_mysql, apcu, opcache, gd, curl, openssl, mbstring, soap, xml, iconv, dom, filter
+              coverage: pcov
+              tools: composer:v2
+              ini-values: zend.assertions=1 memory_limit=256M
+
+         - name: Install dependencies
+           run: |
+              export APP_ENV=prod
+              export APP_DEBUG=0
+              export APP_SECRET=some_secret
+              composer install --no-dev --optimize-autoloader
+
+   deploy:
+      needs: [check-requirements, build]
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Launch deployment
+           uses: appleboy/ssh-action@v1.0.3
+           with:
+              host: ${{ env.SSH_HOST }}
+              username: ${{ env.SSH_USERNAME }}
+              key: ${{ env.SSH_KEY }}
+              script: |
+                 cd ${{ env.REMOTE_DIR }}
+                 git pull
+                 APP_ENV=prod APP_DEBUG=0 sh ./.github/deploy.sh
