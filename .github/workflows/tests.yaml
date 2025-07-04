@@ -1,0 +1,58 @@
+name: Exécution des tests
+
+on:
+   pull_request:
+      branches:
+         - main
+         - develop
+
+
+jobs:
+   check-requirements:
+      runs-on: ubuntu-latest
+
+      steps:
+         -  name: Checkout repository
+            uses: actions/checkout@v4
+
+         -  name: Setup PHP
+            uses: shivammathur/setup-php@v2
+            with:
+               php-version: '8.4.8'
+               extensions: pdo, pdo_pgsql, openssl, xml, zip
+               coverage: pcov
+               tools: composer:v4
+               ini-values: zend.assertions=1 memory_limit=256M
+            env:
+               update: true
+         -  name: Validate repository
+            run: composer validate
+
+   test:
+      needs: check-requirements
+      runs-on: ubuntu-latest
+
+      steps:
+         -  name: Checkout repository
+            uses: actions/checkout@v4
+
+         -  name: Setup PHP
+            uses: shivammathur/setup-php@v2
+            with:
+               php-version: '8.4.8'
+               extensions: pdo, pdo_pgsql, openssl, xml, zip
+               coverage: pcov
+               tools: composer:v4
+               ini-values: zend.assertions=1 memory_limit=256M
+
+         -  name: Install dependencies
+            run: |
+               export APP_ENV=test
+               export APP_SECRET=some_secret
+               composer install
+
+         -  name: Run tests
+            run: |
+               export APP_ENV=test
+               export APP_SECRET=some_secret
+               php bin/phpunit --coverage-text
