@@ -81,6 +81,8 @@ final class RegisterController extends AbstractController
             $user->setDescription("");
             $user->setUsername($userDTO->getUsername());
             $user->setProfilePicture("https://api.dicebear.com/7.x/avataaars/svg?seed=" . $userDTO->getUsername());
+            $user->setBoosterStack(3);
+            $user->setBoosterCreditUpdatedAt(new \DateTime());
 
             $this->entityManager->persist($user);
             $this->entityManager->flush();

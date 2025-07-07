@@ -44,11 +44,39 @@ final class CardCollectionController extends AbstractController
                 'id' => $collection->getId(),
                 'name' => $collection->getName(),
                 'description' => $collection->getDescription(),
-                'display_img' => $collection->getDisplayImage(),
+                'displayImage' => $collection->getDisplayImage(),
             ];
         }
 
         return $this->json($data);
+    }
+
+    #[Route('/api/my-card-collections', name: 'app_my_card_collections', methods: ['GET'])]
+    #[OA\Tag(name: 'Card Collection')]
+    #[OA\Response(
+        response: 200,
+        description: 'Get all card collections',
+        content: new OA\JsonContent(ref: new Model(type: CardCollection::class))
+    )]
+    #[OA\Response(response: 401, description: 'Unauthorized')]
+    #[OA\Response(response: 404, description: 'User not found')]
+    #[OA\Response(response: 500, description: 'Internal server error')]
+    public function showMyCardCollections(CardCollectionRepository $cardCollectionRepository): Response
+    {
+        $user = $this->getUser();
+        $collections = $cardCollectionRepository->findBy(['owner' => $user]);
+
+        $data = [];
+        foreach ($collections as $collection) {
+            $data[] = [
+                'id' => $collection->getId(),
+                'name' => $collection->getName(),
+                'description' => $collection->getDescription(),
+                'displayImage' => $collection->getDisplayImage(),
+            ];
+        }
+
+        return $this->json($data);  
     }
 
     
@@ -69,7 +97,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
 
-    public function showCardCollection(int $id, CardCollectionRepository $cardCollectionRepository): Response
+    public function showCardCollection(string $id, CardCollectionRepository $cardCollectionRepository): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -85,23 +113,35 @@ final class CardCollectionController extends AbstractController
         }
 
         //get cards in the collection
-        $cards = $collection->getCards()->map(function ($card) {
-            return [
+        $cards = $collection->getCards()->toArray();
+        //return all the data of the card
+        $data = [];
+        foreach ($cards as $card) {
+            $data[] = [
                 'id' => $card->getId(),
                 'name' => $card->getName(),
                 'description' => $card->getDescription(),
                 'image' => $card->getImage(),
-                'artist' => $card->getArtistTag(),
+                'artistTag' => $card->getArtistTag(),
+                'rarity' => $card->getRarity()?->value,
+                'releaseDate' => $card->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+                'dropRate' => $card->getDropRate(),
             ];
-        })->toArray();
+        }
 
-        return $this->json([
+        $data = [
             'id' => $collection->getId(),
             'name' => $collection->getName(),
             'description' => $collection->getDescription(),
-            'display_img' => $collection->getDisplayImage(),
-            'cards' => $cards,
-        ]);
+            'displayImage' => $collection->getDisplayImage(),
+            'boosterImage' => $collection->getBoosterImage(),
+            'releaseDate' => $collection->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'endDate' => $collection->getEndDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'isSpecial' => $collection->isSpecial(),
+            'cards' => $data,
+        ];
+
+        return $this->json($data);
     }
 
     #[Route('/api/card-collections', name: 'app_card_collection_create', methods: ['POST'])]
@@ -167,11 +207,11 @@ final class CardCollectionController extends AbstractController
             'id' => $collection->getId(),
             'name' => $collection->getName(),
             'description' => $collection->getDescription(),
-            'display_img' => $collection->getDisplayImage(),
-            'booster_img' => $collection->getBoosterImage(),
-            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
-            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
-            'is_special' => $collection->isSpecial(),
+            'displayImage' => $collection->getDisplayImage(),
+            'boosterImage' => $collection->getBoosterImage(),
+            'releaseDate' => $collection->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'endDate' => $collection->getEndDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'isSpecial' => $collection->isSpecial(),
         ], Response::HTTP_CREATED);
     }
 
@@ -196,7 +236,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
     public function update(
-        int $id,
+        string $id,
         Request $request,
         EntityManagerInterface $entityManager,
         ImageUploaderService $imageUploader
@@ -266,11 +306,11 @@ final class CardCollectionController extends AbstractController
             'id' => $collection->getId(),
             'name' => $collection->getName(),
             'description' => $collection->getDescription(),
-            'display_img' => $collection->getDisplayImage(),
-            'booster_img' => $collection->getBoosterImage(),
-            'release_date' => $collection->getReleaseDate()->format('Y-m-d H:i:s'),
-            'end_date' => $collection->getEndDate()->format('Y-m-d H:i:s'),
-            'is_special' => $collection->isSpecial(),
+            'displayImage' => $collection->getDisplayImage(),
+            'boosterImage' => $collection->getBoosterImage(),
+            'releaseDate' => $collection->getReleaseDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'endDate' => $collection->getEndDate()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i:s'),
+            'isSpecial' => $collection->isSpecial(),
         ], Response::HTTP_OK);
     }
 
@@ -287,7 +327,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
     public function delete(
-        int $id,
+        string $id,
         EntityManagerInterface $entityManager,
         ImageUploaderService $imageUploader,
     ): Response {
