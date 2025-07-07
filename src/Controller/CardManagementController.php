@@ -75,7 +75,7 @@ final class CardManagementController extends AbstractController
 
         ['collection' => $collection, 'releaseDate' => $releaseDate] = $validationResult;
 
-        $card = $this->createCardFromRequest($request, $collection, $releaseDate);
+        $card = $this->createCardFromRequest($request, $collection, $releaseDate, $imageUploader);
 
         $entityManager->persist($card);
         $entityManager->flush();
@@ -83,7 +83,7 @@ final class CardManagementController extends AbstractController
         return $this->json($this->formatCardDataWithDetails($card), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/manage/cards/{id}', name: 'app_admin_card_update', methods: ['PUT', 'POST'])]
+    #[Route('/api/manage/cards/update/{id}', name: 'app_admin_card_update', methods: ['POST'])]
     #[OA\Tag(name: 'Card Management')]
     #[OA\Response(response: 200, description: 'Card template updated successfully')]
     #[OA\Response(response: 400, description: 'Bad request')]
@@ -224,7 +224,7 @@ final class CardManagementController extends AbstractController
     /**
      * Create card entity from request data
      */
-    private function createCardFromRequest(Request $request, CardCollection $collection, \DateTimeImmutable $releaseDate): Card
+    private function createCardFromRequest(Request $request, CardCollection $collection, \DateTimeImmutable $releaseDate, ImageUploaderService $imageUploader): Card
     {
         $card = new Card();
         $card->setName($request->request->get('name'));
@@ -233,7 +233,15 @@ final class CardManagementController extends AbstractController
         $card->setRarity(CardRarity::from($request->request->get('rarity')));
         $card->setReleaseDate($releaseDate);
         $card->setDropRate((float)$request->request->get('dropRate'));
-        $card->setImage('CARD_PLACEHOLDER.png'); // Default image
+        
+        // Handle image upload
+        $image = $request->files->get('image');
+        if ($image instanceof UploadedFile) {
+            $card->setImage($imageUploader->upload($image));
+        } else {
+            $card->setImage('CARD_PLACEHOLDER.png'); // Default image fallback
+        }
+        
         $card->setCollection($collection);
 
         return $card;
