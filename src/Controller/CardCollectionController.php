@@ -45,6 +45,7 @@ final class CardCollectionController extends AbstractController
                 'name' => $collection->getName(),
                 'description' => $collection->getDescription(),
                 'displayImage' => $collection->getDisplayImage(),
+                'boosterImage' => $collection->getBoosterImage(),
             ];
         }
 
@@ -73,6 +74,7 @@ final class CardCollectionController extends AbstractController
                 'name' => $collection->getName(),
                 'description' => $collection->getDescription(),
                 'displayImage' => $collection->getDisplayImage(),
+                'boosterImage' => $collection->getBoosterImage(),
             ];
         }
 
