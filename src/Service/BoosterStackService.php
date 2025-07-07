@@ -26,28 +26,25 @@ class BoosterStackService
         $currentStack = $user->getBoosterStack();
 
         if ($lastRefreshed === null) {
-            // First time setup
+            // First time setup - give max boosters and start cooldown
             $user->setBoosterStack($this->maxBoosterStack);
             $user->setBoosterCreditUpdatedAt(new \DateTime());
         } else {
-            // Calculate earned boosters since last refresh
+            // Calculate how much time has passed since last refresh
             $now = new \DateTime();
             $diffSeconds = $now->getTimestamp() - $lastRefreshed->getTimestamp();
             $cooldownSeconds = $this->boosterOpenCooldownHours * 3600; // Convert hours to seconds
 
-            $earnedBoosters = 0;
-            if ($cooldownSeconds > 0 && $diffSeconds > 0) {
-                $earnedBoosters = floor($diffSeconds / $cooldownSeconds);
-            }
-
-            if ($earnedBoosters > 0) {
-                $newStack = min($currentStack + $earnedBoosters, $this->maxBoosterStack);
+            // Calculate total boosters that should be available based on time elapsed
+            $totalBoostersEarned = floor($diffSeconds / $cooldownSeconds);
+            
+            if ($totalBoostersEarned > 0) {
+                // Set stack to current + earned, capped at max
+                $newStack = min($currentStack + $totalBoostersEarned, $this->maxBoosterStack);
                 $user->setBoosterStack($newStack);
-
-                // Move the refresh date forward by the number of intervals earned
-                $newRefreshDate = new \DateTime('@' . $lastRefreshed->getTimestamp());
-                $newRefreshDate->add(new \DateInterval('PT' . ($earnedBoosters * $this->boosterOpenCooldownHours) . 'H'));
-                $user->setBoosterCreditUpdatedAt($newRefreshDate);
+                
+                // Reset the cooldown timer to now
+                $user->setBoosterCreditUpdatedAt(new \DateTime());
             }
         }
 

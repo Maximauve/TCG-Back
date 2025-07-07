@@ -69,7 +69,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
 
-    public function showCardCollection(int $id, CardCollectionRepository $cardCollectionRepository): Response
+    public function showCardCollection(string $id, CardCollectionRepository $cardCollectionRepository): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -196,7 +196,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
     public function update(
-        int $id,
+        string $id,
         Request $request,
         EntityManagerInterface $entityManager,
         ImageUploaderService $imageUploader
@@ -287,7 +287,7 @@ final class CardCollectionController extends AbstractController
         description: 'The ID of the card collection',
     )]
     public function delete(
-        int $id,
+        string $id,
         EntityManagerInterface $entityManager,
         ImageUploaderService $imageUploader,
     ): Response {
