@@ -79,6 +79,7 @@ final class BoosterController extends AbstractController
 
             // Decrement stack *before* creating cards and flushing
             $user->setBoosterStack($user->getBoosterStack() - 1);
+            $entityManager->flush();
 
             $userCards = $this->createUserCards($drawnCards, $user, $entityManager);
 
