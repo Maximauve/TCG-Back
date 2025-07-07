@@ -83,7 +83,7 @@ final class CardManagementController extends AbstractController
         return $this->json($this->formatCardDataWithDetails($card), Response::HTTP_CREATED);
     }
 
-    #[Route('/api/manage/cards/{id}', name: 'app_admin_card_update', methods: ['PUT', 'POST'])]
+    #[Route('/api/manage/cards/update/{id}', name: 'app_admin_card_update', methods: ['POST'])]
     #[OA\Tag(name: 'Card Management')]
     #[OA\Response(response: 200, description: 'Card template updated successfully')]
     #[OA\Response(response: 400, description: 'Bad request')]
